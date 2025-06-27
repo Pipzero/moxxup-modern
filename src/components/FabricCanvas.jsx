@@ -1,13 +1,24 @@
 import React, {Component} from 'react';
-import { GithubPicker } from 'react-colorful';
+import { useEffect, useRef } from 'react';
+import { HexColorPicker } from 'react-colorful';
 import FontPicker from 'font-face-observer';
 import _ from 'lodash';
-
 import CONSTANTS from '../constants';
 import backgroundImage from "../static/panel-front-uv.png";
 import {colorToComplementary} from "../util/color";
+import { Canvas, Rect } from 'fabric';
+import FontFaceObserver from 'font-face-observer';
 
-const FontFaceObserver = require('font-face-observer');
+
+// const rect = new Rect({
+//   left: 100,
+//   top: 100,
+//   fill: 'hotpink',
+//   width: 100,
+//   height: 100,
+// });
+
+// canvas.add(rect);
 
 const colorList = [];
 _.forOwn(CONSTANTS.MATERIAL_COLORS, (value, key) => {
@@ -38,7 +49,7 @@ const commonTextConfig = {
     originY: "center"
 };
 
-class FabricCanvas extends Component {
+class FabricCanvasClass extends Component {
     state = {
         isPickerVisible: false,
         activeColor: '#000',
@@ -566,22 +577,22 @@ class FabricCanvas extends Component {
         /**
          * calculate rotation knob coords
          */
-        const [[x1, y1], [x2, y2]] = coords;
+        // const [[x1, y1], [x2, y2]] = coords;
 
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2;
+        // const midX = (x1 + x2) / 2;
+        // const midY = (y1 + y2) / 2;
 
         const knobWidth = 0.02;
-        const knobHeight = 0.05;
+        // const knobHeight = 0.05;
 
-        const angleSin = -Math.sin(obj.angle * Math.PI / 180);
-        const angleCos = Math.cos(obj.angle * Math.PI / 180);
+        // const angleSin = -Math.sin(obj.angle * Math.PI / 180);
+        // const angleCos = Math.cos(obj.angle * Math.PI / 180);
 
-        const p1 = [midX - knobWidth * angleCos, midY - knobWidth * angleSin];
-        const p2 = [midX + knobWidth * angleCos, midY + knobWidth * angleSin];
+        // const p1 = [midX - knobWidth * angleCos, midY - knobWidth * angleSin];
+        // const p2 = [midX + knobWidth * angleCos, midY + knobWidth * angleSin];
 
-        const p3 = [midX - knobWidth * angleCos - knobHeight * angleSin, midY - knobWidth * angleSin + knobHeight * angleCos];
-        const p4 = [midX + knobWidth * angleCos - knobHeight * angleSin, midY + knobWidth * angleSin + knobHeight * angleCos];
+        // const p3 = [midX - knobWidth * angleCos - knobHeight * angleSin, midY - knobWidth * angleSin + knobHeight * angleCos];
+        // const p4 = [midX + knobWidth * angleCos - knobHeight * angleSin, midY + knobWidth * angleSin + knobHeight * angleCos];
 
         // const knobCoords = [
         //     p1, p2, p4, p3
@@ -855,4 +866,28 @@ class FabricCanvas extends Component {
     }
 }
 
-export default FabricCanvas;
+export default function FabricCanvas() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = new Canvas(canvasRef.current, {
+      width: 600,
+      height: 400,
+      backgroundColor: '#f3f3f3',
+    });
+
+    const rect = new Rect({
+      left: 100,
+      top: 100,
+      fill: 'skyblue',
+      width: 100,
+      height: 100,
+    });
+
+    canvas.add(rect);
+
+    return () => canvas.dispose();
+  }, []);
+
+  return <canvas ref={canvasRef} />;
+}

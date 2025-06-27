@@ -1,15 +1,15 @@
 import React, { Component } from "react";
 import { IoClose } from "react-icons/io5";
 import Player from "./player";
-
-import FabricCanvas from "./fabric-canvas";
+import FabricCanvas from './FabricCanvas';
 import { colorToComplementary } from "../util/color";
-
-import { GithubPicker } from "react-colorful";
-import _, { times } from "lodash";
+import { HexColorPicker } from 'react-colorful';
+import _, {} from "lodash";
 import CONSTANTS from "../constants";
 import Header from "./header";
 import Footer from "./footer";
+
+// import { fabric } from 'fabric';
 
 const colorList = [];
 _.forOwn(CONSTANTS.MATERIAL_COLORS, (value, key) => {
@@ -18,7 +18,7 @@ _.forOwn(CONSTANTS.MATERIAL_COLORS, (value, key) => {
   });
 });
 
-class ProductCreator extends Component {
+class ProductCreatorClass extends Component {
   state = {
     outOfBoundsValue: false,
     isEditorVisible: false,
@@ -97,7 +97,7 @@ class ProductCreator extends Component {
       })
     }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState) {
     if (this.state.isFront !== prevState.isFront) {
       this.setState((state) => ({ isPlayerFront: state.isFront }));
     }
@@ -112,7 +112,6 @@ class ProductCreator extends Component {
       outOfBoundsValue,
       isEditorVisible,
       isNewText,
-      isPlayerFront,
     } = this.state;
 
     return (
@@ -364,4 +363,17 @@ class ProductCreator extends Component {
   }
 }
 
-export default ProductCreator;
+export default function ProductCreator({ handleBurgerMenu }) {
+  return (
+    <div className="product-creator">
+      <header>
+        <h2>Design Your Product</h2>
+        <button onClick={handleBurgerMenu}>☰ Menu</button>
+      </header>
+
+      <section className="canvas-area">
+        <FabricCanvas />
+      </section>
+    </div>
+  );
+}
