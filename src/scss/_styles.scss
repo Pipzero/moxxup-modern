@@ -1,22 +1,32 @@
 @charset "UTF-8";
 // cross browser reset
-@import "reset";
+@import "./reset";
 // font awesome icons
-@import "font-awesome-icons";
+@import "./font-awesome-icons";
 // add montserrat font to project
-@import "montserrat";
+@import "./montserrat";
 // add pure loader
-@import "pure-loaders";
+@import "./pure-loaders";
 
 // COMPONENTS
-@import "components/header";
-@import "components/burger";
-@import "components/productCreator";
-@import "components/footer";
-@import "components/player";
+@import "./components/header";
+@import "./components/burger";
+@import "./components/productCreator";
+@import "./components/footer";
+@import "./components/player";
 
 body {
   overflow-x: hidden;
+}
+
+.parent-flex-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.player-container {
+  flex: 1;
 }
 
 [class*="__btn"] {
@@ -2519,4 +2529,19 @@ body {
 .product__details--text {
   color: #000;
   text-align: start;
+}
+
+.product-creator {
+  padding: 1rem;
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .canvas-area {
+    margin-top: 1rem;
+    canvas {
+      border: 1px solid red;
+    }
+  }
 }
