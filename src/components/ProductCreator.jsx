@@ -5,7 +5,7 @@ import Player from "./player";
 import FabricCanvas from "./fabric-canvas";
 import { colorToComplementary } from "../util/color";
 
-import { GithubPicker } from "react-color";
+import { GithubPicker } from "react-colorful";
 import _, { times } from "lodash";
 import CONSTANTS from "../constants";
 import Header from "./header";

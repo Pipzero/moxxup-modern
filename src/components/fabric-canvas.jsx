@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
-import { GithubPicker } from 'react-color';
-import FontPicker from 'font-picker-react';
+import { GithubPicker } from 'react-colorful';
+import FontPicker from 'font-face-observer';
 import _ from 'lodash';
 
 import CONSTANTS from '../constants';
