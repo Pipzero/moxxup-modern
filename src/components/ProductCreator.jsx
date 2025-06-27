@@ -1,379 +1,189 @@
-import React, { Component } from "react";
-import { IoClose } from "react-icons/io5";
-import Player from "./player";
+import { useRef, useState } from 'react';
+import { IoClose } from 'react-icons/io5';
+import Player from './player';
 import FabricCanvas from './FabricCanvas';
-import { colorToComplementary } from "../util/color";
+import Header from './header';
+import Footer from './footer';
+import CONSTANTS from '../constants';
 import { HexColorPicker } from 'react-colorful';
-import _, {} from "lodash";
-import CONSTANTS from "../constants";
-import Header from "./header";
-import Footer from "./footer";
+import { colorToComplementary } from '../util/color';
+import _ from 'lodash';
 
-// import { fabric } from 'fabric';
+const ProductCreator = ({ handleBurgerMenu }) => {
+  const fabricCanvasRef = useRef(null);
+  const playerRef = useRef(null);
 
-const colorList = [];
-_.forOwn(CONSTANTS.MATERIAL_COLORS, (value, key) => {
-  _.forOwn(CONSTANTS.MATERIAL_COLORS[key], (value, key) => {
-    if (!key.includes("a")) colorList.push(value);
+  const [mainTheme, setMainTheme] = useState(CONSTANTS.SITE_THEME.Black);
+  const [isFront] = useState(true);
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [isEditorVisible, setEditorVisible] = useState(false);
+  const [isNewText, setNewText] = useState(null);
+  const [isPhotoMenuVisible, setPhotoMenuVisible] = useState(false);
+  const [isShareMenuVisible, setShareMenuVisible] = useState(false);
+  const [isPickerVisible, setPickerVisible] = useState(false);
+  const [activeColor, setActiveColor] = useState('#212121');
+  const [outOfBoundsValue, setOutOfBoundsValue] = useState(false);
+  const [isBackgroundVisible, setBackgroundVisible] = useState(false);
+
+  const colorList = [];
+  _.forOwn(CONSTANTS.MATERIAL_COLORS, (group) => {
+    _.forOwn(group, (value, key) => {
+      if (!key.includes('a')) colorList.push(value);
+    });
   });
-});
 
-class ProductCreatorClass extends Component {
-  state = {
-    outOfBoundsValue: false,
-    isEditorVisible: false,
-    isNewText: null,
-    isPlayerFront: true,
-    isFront: true,
-    mainTheme: CONSTANTS.SITE_THEME.Black,
-    autoRotate: false,
-    isShareMenuVisible: false,
-    isPhotoMenuVisible: false,
-    isBackroundVisible: false,
-  };
-
-  handleShareTrigger = () => this.setState({isShareMenuVisible: !this.state.isShareMenuVisible});
-
-  handlePhotoTrigger = () => this.setState({isPhotoMenuVisible: !this.state.isPhotoMenuVisible});
-
-  handleShowEditor = () => this.setState({ isEditorVisible: true });
-
-  handleHideEditor = () =>
-    this.setState({
-      isEditorVisible: false,
-      isPickerVisible: false,
-    });
-
-  handleOutOfBounds = (outOfBoundsValue) => this.setState({ outOfBoundsValue });
-
-  handleAddText = () => {
-    if (!this.state.isEditorVisible) {
-      this.setState({
-        isEditorVisible: true,
-        isNewText: new Date().valueOf(),
-        autoRotate: false,
-      });
+  const handleAddText = () => {
+    if (!isEditorVisible) {
+      setEditorVisible(true);
+      setNewText(Date.now());
+      setAutoRotate(false);
     } else {
-      this.setState({
-        isEditorVisible: false,
-      });
+      setEditorVisible(false);
     }
   };
 
-  handleColorChange = (activeColor) =>
-    this.setState({
-      activeColor,
-      isPickerVisible: false,
-    });
-
-  rotateToFront = (isPlayerFront) =>
-    this.setState({ isPlayerFront, isEditorVisible: false }, () =>
-      this.player.rotateToFront(isPlayerFront)
-    );
-
-  handleUpload = (files) => {
-    if (this.state.isFront) {
-      this.frontCanvas.processFiles(files);
-    } else {
-      this.backCanvas.processFiles(files);
-    }
-    this.setState({isPhotoMenuVisible: !this.state.isPhotoMenuVisible});
+  const handleScreenshot = () => {
+    fabricCanvasRef.current?.downloadCanvas();
+    setPhotoMenuVisible(false);
   };
 
-  handleTogglePicker = () => this.setState({ isPickerVisible: true });
+  const handleUpload = (files) => {
+    fabricCanvasRef.current?.processFiles(files);
+    setPhotoMenuVisible(false);
+  };
 
-  handleThemeToggler = () =>
-    this.setState({
-      mainTheme:
-        this.state.mainTheme === CONSTANTS.SITE_THEME.White
-          ? CONSTANTS.SITE_THEME.Black
-          : CONSTANTS.SITE_THEME.White,
-    });
-
-
-    sceneBackgroundToggler = () => {
-      this.setState({
-        isBackroundVisible: !this.state.isBackroundVisible,
-      })
-    }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.isFront !== prevState.isFront) {
-      this.setState((state) => ({ isPlayerFront: state.isFront }));
-    }
-    return this.state.isBackroundVisible;
-  }
-
-
-
-  render() {
-    const { activeColor = "#212121", isPickerVisible } = this.state;
-    const {
-      outOfBoundsValue,
-      isEditorVisible,
-      isNewText,
-    } = this.state;
-
-    return (
-      <>
-        {this.state.isShareMenuVisible && (
-          <div className="share-menu" >
-            <IoClose onClick={this.handleShareTrigger}className="close__burger" />
-            <ul className="share-list">
-              <li className="share-list-item tiktok"></li>
-              <li className="share-list-item facebook"></li>
-              <li className="share-list-item twitter"></li>
-            </ul>
-            <h1>proof of creation</h1>
-          </div>
-        )}
-
-        {this.state.isPhotoMenuVisible && (
-          <div className="share-menu">
-            <IoClose onClick={this.handlePhotoTrigger}className="close__burger" />
-            <ul className="share-list">
-              <li
-                className="share-list-item screenshot"
-                type="button"
-                onClick={() => {
-                  if (this.state.isFront) {
-                    this.frontCanvas && this.frontCanvas.downloadCanvas();
-                  } else {
-                    this.backCanvas && this.backCanvas.downloadCanvas();
-                  }
-                  this.handlePhotoTrigger();
-                }}
-              ></li>
-              
-              <li className="share-list-item upload-video"></li>
-                <label
-                  htmlFor="upload"
-                  className={`share-list-item upload-photo`}
-                ></label>
-                <input
-                  id="upload"
-                  type="file"
-                  style={{ display: "none" }}
-                  onChange={(e) => this.handleUpload(e.target.files)}
-                />
-            </ul>
-          </div>
-        )}
-        <div
-          className={this.state.mainTheme}
-          style={{ position: "relative", height: "100vh" }}
-        >
-          <Header
-            handleBurgerMenu={this.props.handleBurgerMenu}
-            onThemeTogglerChange={() => this.handleThemeToggler()}
-            colorTheme={this.state.mainTheme}
-            sceneBackgroundToggler={()=> this.sceneBackgroundToggler()}
-          />
-          <div className="product-creator">
-            <div className="product-creator__container">
-              <Player
-                sceneBackground = {this.state.isBackroundVisible}
-                colorTheme={this.state.mainTheme}
-                useState={(updater) => this.setState(updater)}  
-                onProgress={(loadingPercentage) =>
-                  this.setState({ loadingPercentage })
-                }
-                image={this.state.image}
-                ref={(ref) => (this.player = ref)}
-                onEditorShow={this.handleShowEditor}
-                setImgFront={this.frontCanvas && this.frontCanvas.setImgPreview}
-                setImgBack={this.backCanvas && this.backCanvas.setImgPreview}
-                setTextAngle={(...args) => {
-                  if (this.state.isFront) {
-                    this.frontCanvas && this.frontCanvas.setTextAngle(...args);
-                  } else {
-                    this.backCanvas && this.backCanvas.setTextAngle(...args);
-                  }
-                }}
-                removeActiveTextFront={
-                  this.frontCanvas && this.frontCanvas.removeActiveText
-                }
-                removeActiveTextBack={
-                  this.backCanvas && this.backCanvas.removeActiveText
-                }
-                autoRotate={this.state.autoRotate}
-              />
-              <div className="product-creator__controls">
-                <button
-                  type="button"
-                  onClick=""
-                  className={`product-creator__btn product-creator__btn--wardrobe`}
-                ></button>
-
-                <button
-                  type="button"
-                  onClick={this.handlePhotoTrigger}
-                  className={`product-creator__btn product-creator__btn-upload`}
-                ></button>
-                {/* <button
-                type="button"
-                onClick={() => {
-                  if (this.state.isFront) {
-                    this.frontCanvas && this.frontCanvas.downloadCanvas();
-                  } else {
-                    this.backCanvas && this.backCanvas.downloadCanvas();
-                  }
-                }}
-                className="product-creator__btn product-creator__btn-download"
-              ></button> */}
-                <button
-                  className="product-creator__btn  product-creator__btn-add"
-                  onClick={this.handleAddText}
-                />
-                <button
-                  onClick={this.handleTogglePicker}
-                  // style={{
-                  //     background: activeColor,
-                  //     margin: 6,
-                  //     width: 46,
-                  //     borderRadius: 46,
-                  //     height: 46
-                  // }}
-                  className="product-creator__btn product-creator__btn-color"
-                  data-color={isPickerVisible ? activeColor : null}
-                >
-                  {isPickerVisible && (
-                    <GithubPicker
-                      width={300}
-                      triangle={"hide"}
-                      color={activeColor}
-                      colors={colorList}
-                      onChangeComplete={(color) =>
-                        this.handleColorChange(color.hex)
-                      }
-                    />
-                  )}
-                </button>
-                {/* <button
-                type="button"
-                onClick={() => this.rotateToFront(!this.state.isPlayerFront)}
-                className={`product-creator__btn product-creator__btn--rotate`}
-              ></button> */}
-
-                <button
-                  type="button"
-                  onClick={this.handleShareTrigger}
-                  className={`product-creator__btn product-creator__btn--share`}
-                ></button>
-                {/* <BiShareAlt
-                onClick=""
-                className="product-creator__btn product-creator__btn--share"
-              /> */}
-              </div>
-            </div>
-
-            <div
-              style={
-                {
-                  //display: "none"
-                }
-              }
-              className={`
-                            product-creator__printable-area
-                            ${
-                              colorToComplementary(activeColor) === "white"
-                                ? "light"
-                                : ""
-                            }
-                            ${
-                              isEditorVisible && this.state.isFront
-                                ? ""
-                                : "is-hidden"
-                            }
-                            `}
-              data-size="12” x 16”"
-            >
-              <FabricCanvas
-                activeColor={activeColor}
-                onOutOfBounds={this.handleOutOfBounds}
-                onEditorShow={this.handleShowEditor}
-                onEditorHide={this.handleHideEditor}
-                isEditorVisible={isEditorVisible}
-                isNewText={isNewText}
-                ref={(ref) => {
-                  this.frontCanvas = ref;
-                }}
-                updatePlayer={this.player && this.player.renderFront}
-                isFront
-                isActive={this.state.isFront}
-              />
-            </div>
-            <div
-              style={
-                {
-                  //display: "none"
-                }
-              }
-              className={`
-                            product-creator__printable-area
-                            ${
-                              colorToComplementary(activeColor) === "white"
-                                ? "light"
-                                : ""
-                            }
-                            ${
-                              isEditorVisible && !this.state.isFront
-                                ? ""
-                                : "is-hidden"
-                            }
-                            `}
-              data-size="12” x 16”"
-            >
-              <FabricCanvas
-                activeColor={activeColor}
-                onOutOfBounds={this.handleOutOfBounds}
-                onEditorShow={this.handleShowEditor}
-                onEditorHide={this.handleHideEditor}
-                isEditorVisible={isEditorVisible}
-                isNewText={isNewText}
-                ref={(ref) => {
-                  this.backCanvas = ref;
-                }}
-                updatePlayer={this.player && this.player.renderBack}
-                isActive={!this.state.isFront}
-              />
-            </div>
-            {outOfBoundsValue && isEditorVisible && (
-              <div className="product-creator__message">
-                {`Your graphic is w${outOfBoundsValue}y beyond recommended size.`}
-              </div>
-            )}
-          </div>
-          <div className="product__details">
-            <p className="product__details--text">
-              Creation node: 305 <br />
-              Dimensions: CHEST: 58" X LENGTH: 77.5" <br />
-              Proof of creation: 4300 + (THC) <br />
-              Fabric: Pima <br />
-              Rig: Disabled <br />
-              Process: 49.00 USD <br />
-              Simulation: 50.000 (THC) <br />
-              Character upload: Disabled
-            </p>
-          </div>
-          <Footer colorTheme={this.state.mainTheme} />
-        </div>
-      </>
+  const toggleTheme = () => {
+    setMainTheme((prev) =>
+      prev === CONSTANTS.SITE_THEME.White ? CONSTANTS.SITE_THEME.Black : CONSTANTS.SITE_THEME.White
     );
-  }
-}
+  };
 
-export default function ProductCreator({ handleBurgerMenu }) {
+  const printableClass = `product-creator__printable-area ${
+    colorToComplementary(activeColor) === 'white' ? 'light' : ''
+  } ${isEditorVisible ? '' : 'is-hidden'}`;
+
   return (
-    <div className="product-creator">
-      <header>
-        <h2>Design Your Product</h2>
-        <button onClick={handleBurgerMenu}>☰ Menu</button>
-      </header>
+    <>
+      {isShareMenuVisible && (
+        <div className="share-menu">
+          <IoClose onClick={() => setShareMenuVisible(false)} className="close__burger" />
+          <ul className="share-list">
+            <li className="share-list-item tiktok" />
+            <li className="share-list-item facebook" />
+            <li className="share-list-item twitter" />
+          </ul>
+          <h1>proof of creation</h1>
+        </div>
+      )}
 
-      <section className="canvas-area">
-        <FabricCanvas />
-      </section>
-    </div>
+      {isPhotoMenuVisible && (
+        <div className="share-menu">
+          <IoClose onClick={() => setPhotoMenuVisible(false)} className="close__burger" />
+          <ul className="share-list">
+            <li className="share-list-item screenshot" onClick={handleScreenshot} />
+            <li className="share-list-item upload-video" />
+            <label htmlFor="upload" className="share-list-item upload-photo" />
+            <input
+              id="upload"
+              type="file"
+              style={{ display: 'none' }}
+              onChange={(e) => handleUpload(e.target.files)}
+            />
+          </ul>
+        </div>
+      )}
+
+      <div className={mainTheme} style={{ position: 'relative', height: '100vh' }}>
+        <Header
+          handleBurgerMenu={handleBurgerMenu}
+          onThemeTogglerChange={toggleTheme}
+          colorTheme={mainTheme}
+          sceneBackgroundToggler={() => setBackgroundVisible(!isBackgroundVisible)}
+        />
+
+        <div className="product-creator__container">
+          <Player
+            ref={playerRef}
+            sceneBackground={isBackgroundVisible}
+            colorTheme={mainTheme}
+            autoRotate={autoRotate}
+            onProgress={() => null}
+            onEditorShow={() => setEditorVisible(true)}
+            setImgFront={(img) => fabricCanvasRef.current?.setImgPreview?.(img)}
+            setImgBack={(img) => fabricCanvasRef.current?.setImgPreview?.(img)}
+            setTextAngle={(...args) => fabricCanvasRef.current?.setTextAngle?.(...args)}
+            removeActiveTextFront={() => fabricCanvasRef.current?.removeActiveText?.()}
+            removeActiveTextBack={() => fabricCanvasRef.current?.removeActiveText?.()}
+          />
+
+          <div className="product-creator__controls">
+            <button className="product-creator__btn product-creator__btn--wardrobe" />
+            <button
+              className="product-creator__btn product-creator__btn-upload"
+              onClick={() => setPhotoMenuVisible(true)}
+            />
+            <button className="product-creator__btn product-creator__btn-add" onClick={handleAddText} />
+            <button
+              className="product-creator__btn product-creator__btn-color"
+              onClick={() => setPickerVisible(true)}
+              data-color={isPickerVisible ? activeColor : null}
+            >
+              {isPickerVisible && (
+                <HexColorPicker color={activeColor} onChange={(c) => {
+                  setActiveColor(c);
+                  setPickerVisible(false);
+                }} />
+              )}
+            </button>
+            <button
+              className="product-creator__btn product-creator__btn--share"
+              onClick={() => setShareMenuVisible(true)}
+            />
+          </div>
+        </div>
+
+        <div className={printableClass} data-size='12" x 16"'>
+          <FabricCanvas
+            ref={fabricCanvasRef}
+            activeColor={activeColor}
+            isEditorVisible={isEditorVisible}
+            isNewText={isNewText}
+            updatePlayer={
+              isFront
+                ? playerRef.current?.renderFront
+                : playerRef.current?.renderBack
+            }
+            isFront={isFront}
+            isActive
+            onEditorShow={() => setEditorVisible(true)}
+            onEditorHide={() => setEditorVisible(false)}
+            onOutOfBounds={(val) => setOutOfBoundsValue(val)}
+          />
+        </div>
+
+        {outOfBoundsValue && isEditorVisible && (
+          <div className="product-creator__message">
+            {`Your graphic is w${outOfBoundsValue}y beyond recommended size.`}
+          </div>
+        )}
+
+        <div className="product__details">
+          <p className="product__details--text">
+            Creation node: 305 <br />
+            Dimensions: CHEST: 58" X LENGTH: 77.5" <br />
+            Proof of creation: 4300 + (THC) <br />
+            Fabric: Pima <br />
+            Rig: Disabled <br />
+            Process: 49.00 USD <br />
+            Simulation: 50.000 (THC) <br />
+            Character upload: Disabled
+          </p>
+        </div>
+
+        <Footer colorTheme={mainTheme} />
+      </div>
+    </>
   );
-}
+};
+
+export default ProductCreator;
