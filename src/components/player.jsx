@@ -2,6 +2,7 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) => {
   const containerRef = useRef(null);
@@ -38,21 +39,69 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     controls.target.set(0, 0, 0);
     controlsRef.current = controls;
 
+
+    
     // HDRI environment
-    new RGBELoader()
+    const environmentMap = new RGBELoader()
       .setDataType(THREE.HalfFloatType)
       .load('/hdr/env_1k.hdr', (texture) => {
         texture.mapping = THREE.EquirectangularReflectionMapping;
         scene.environment = texture;
         scene.background = texture; // or null if you want transparency
       });
+      
+    // reflective material
+    const reflectiveMaterial = new THREE.MeshStandardMaterial({
+      envMap: environmentMap,
+      metalness: 1, // Fully metallic for strong reflections
+      roughness: 0.1, // Smooth surface for clear reflections
+    });
 
-    // Debug cube
-    const cube = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color: 'hotpink' })
+    // The Carabiner
+    const loader = new OBJLoader();
+
+    // const center = new THREE.Vector3();
+
+    new THREE.Mesh(
+      loader.load(
+        '/obj/test_piece.obj', // Replace with the path to your .obj file
+        (object) => {
+          
+          console.log(object.position);
+          object.position.set(0,.5,0);
+          object.rotateX(60);
+          object.rotateY(30);
+          console.log(object.position);
+
+
+          object.traverse((child) => {
+            if (child.isMesh) {
+              child.material = reflectiveMaterial;
+            }
+          });
+          // Add the loaded object to the scene
+            object.scale.set(.6,.6,.6);
+
+          scene.add(object);
+          },
+        (xhr) => {
+          console.log(`Loading progress: ${(xhr.loaded / xhr.total) * 100}%`);
+          },
+        (error) => {
+          console.error('An error occurred while loading the OBJ file:', error);
+          }
+      )
+
+
     );
-    scene.add(cube);
+    
+    // Debug cube
+
+    // const cube = new THREE.Mesh(
+    //   new THREE.BoxGeometry(1, 1, 1),
+    //   new THREE.MeshStandardMaterial({ color: 'hotpink' })
+    // );
+
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(5, 10, 7.5);

@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import Player from './player';
 import FabricCanvas from './FabricCanvas';
-import Header from './header';
-import Footer from './footer';
+// import Header from './header';
+// import Footer from './footer';
 import CONSTANTS from '../constants';
 import { HexColorPicker } from 'react-colorful';
 import { colorToComplementary } from '../util/color';
@@ -94,12 +94,12 @@ const ProductCreator = ({ handleBurgerMenu }) => {
       )}
 
       <div className={mainTheme} style={{ position: 'relative', height: '100vh' }}>
-        <Header
+        {/* <Header
           handleBurgerMenu={handleBurgerMenu}
           onThemeTogglerChange={toggleTheme}
           colorTheme={mainTheme}
           sceneBackgroundToggler={() => setBackgroundVisible(!isBackgroundVisible)}
-        />
+        /> */}
 
         <div className="product-creator__container">
           <Player
@@ -180,7 +180,7 @@ const ProductCreator = ({ handleBurgerMenu }) => {
           </p>
         </div>
 
-        <Footer colorTheme={mainTheme} />
+        {/* <Footer colorTheme={mainTheme} /> */}
       </div>
     </>
   );
