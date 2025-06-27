@@ -1,0 +1,80 @@
+// .burger {
+//   position: absolute;
+//   top: 107px;
+//   left: 36px;
+//   z-index: 1;
+//   cursor: pointer;
+//   min-width: 49px;
+//   min-height: 33px;
+//   max-width: 49px;
+//   max-height: 33px;
+
+//   &:active {
+//     -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+//     -webkit-tap-highlight-color: transparent;
+//   }
+//   &:focus {
+//     -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+//     -webkit-tap-highlight-color: transparent;
+//   }
+
+//   & span,
+//   & span:before,
+//   & span:after {
+//     position: absolute;
+//     display: block;
+//     content: "";
+//     width: 49px;
+//     height: 3px;
+//     background: #4f4f4f;
+//   }
+
+//   & span:before {
+//     top: 12px;
+//   }
+
+//   & span:after {
+//     top: 24px;
+//   }
+// }
+
+.burgerActive {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  transition: all 600ms ease;
+  z-index: 6;
+}
+
+.burger__item {
+  font-size: 22px;
+  list-style: none;
+  line-height: 3em;
+}
+
+.burgerOff {
+  transform: translateX(-110%);
+  position: absolute;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  flex-direction: column;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 5;
+  transition: all 600ms ease;
+}
+
+.close__burger {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  color: #fff;
+  font-size: 35px;
+  z-index: 6;
+  cursor: pointer;
+}

@@ -1,0 +1,84 @@
+.site-footer {
+  height: 56px;
+  background-color: #e6edf2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.site-footer__content {
+  display: flex;
+  max-width: 1345px;
+  width: 100%;
+  line-height: 24px;
+  margin: 0 auto;
+}
+
+.site-footer__text-copyright {
+  color: #444e54;
+  font-family: Roboto, sans-serif;
+  font-size: 14px;
+  margin-right: auto;
+}
+
+.site-footer__menu {
+  display: flex;
+  list-style: none;
+}
+
+.site-footer__menu-item {
+  color: #444e54;
+  font-family: Roboto, sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
+  margin-left: 36px;
+}
+
+.site-footer__menu-item--delimitier {
+  width: 2px;
+  height: 24px;
+  border: 1px solid #cccccc;
+  background-color: #000000;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  font-family: Montserrat;
+  font-style: normal;
+  font-weight: normal;
+  margin: 0 36px 0 36px;
+  padding-bottom: 41px;
+
+  &.white-theme {
+    color: #000000;
+  }
+
+  &.black-theme {
+    color: #ffffff;
+  }
+
+  .language-list {
+    display: flex;
+    list-style-type: none;
+
+    .language-list__item {
+      margin-right: 16px;
+      cursor: pointer;
+    }
+  }
+}
+
+// BREAKPOINT (responsive) STARTS HERE
+@media screen and (max-width: 500px), screen and (max-height: 650px) {
+  .footer {
+    margin: 0 16px 0 16px;
+    padding-bottom: 11px;
+    font-size: 10px;
+  }
+
+  .footer {
+    display: none;
+  }
+}
