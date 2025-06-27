@@ -1,11 +1,13 @@
-// src/components/FabricCanvas.jsx
 import React, {
   useRef,
   useEffect,
   useImperativeHandle,
   forwardRef
 } from 'react';
-import { Canvas, Rect, Image as FabricImage, Text as FabricText } from 'fabric';
+
+import { Canvas, Image, Textbox } from 'fabric';
+
+
 
 const FabricCanvas = forwardRef(
   (
@@ -23,7 +25,6 @@ const FabricCanvas = forwardRef(
     const canvasEl = useRef(null);
     const fabricCanvas = useRef(null);
 
-    // Initialize Fabric canvas once
     useEffect(() => {
       if (!canvasEl.current) return;
 
@@ -32,9 +33,9 @@ const FabricCanvas = forwardRef(
         height: 400,
         backgroundColor: isActive ? '#ffffff' : 'transparent'
       });
+
       fabricCanvas.current = c;
 
-      // Selection events to toggle editor UI
       c.on('selection:created', () => onEditorShow?.());
       c.on('selection:updated', () => onEditorShow?.());
       c.on('selection:cleared', () => onEditorHide?.());
@@ -42,15 +43,15 @@ const FabricCanvas = forwardRef(
       return () => c.dispose();
     }, [isActive, onEditorShow, onEditorHide]);
 
-    // Add new text when flagged
     useEffect(() => {
       const c = fabricCanvas.current;
       if (isNewText != null && c) {
-        const txt = new FabricText('New Text', {
+        const txt = new Textbox('New Text', {
           left: 50,
           top: 50,
           fill: activeColor,
-          fontSize: 24
+          fontSize: 24,
+          width: 200
         });
         c.add(txt).setActiveObject(txt);
         c.renderAll();
@@ -59,7 +60,6 @@ const FabricCanvas = forwardRef(
       }
     }, [isNewText, activeColor, updatePlayer, onEditorShow]);
 
-    // Re-color active object
     useEffect(() => {
       const c = fabricCanvas.current;
       if (c && isEditorVisible) {
@@ -72,13 +72,12 @@ const FabricCanvas = forwardRef(
       }
     }, [activeColor, isEditorVisible, updatePlayer]);
 
-    // Expose imperative methods to parent via ref
     useImperativeHandle(ref, () => ({
       processFiles(files) {
         const c = fabricCanvas.current;
         Array.from(files).forEach((file) => {
           const url = URL.createObjectURL(file);
-          FabricImage.fromURL(url, (img) => {
+          Image.fromURL(url, (img) => {
             img.set({ left: 100, top: 100, scaleX: 0.5, scaleY: 0.5 });
             c.add(img).setActiveObject(img);
             c.renderAll();
@@ -98,9 +97,8 @@ const FabricCanvas = forwardRef(
       },
 
       setImgPreview(imgUrl) {
-        // optional: swap in a preview image on a background rect
         const c = fabricCanvas.current;
-        FabricImage.fromURL(imgUrl, (img) => {
+        Image.fromURL(imgUrl, (img) => {
           img.set({ left: 0, top: 0, selectable: false });
           c.setBackgroundImage(img, c.renderAll.bind(c));
         });

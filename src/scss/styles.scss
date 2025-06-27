@@ -1,19 +1,19 @@
 @charset "UTF-8";
 // cross browser reset
-@import "./reset";
+@use "./reset";
 // font awesome icons
-@import "./font-awesome-icons";
+@use "./font-awesome-icons";
 // add montserrat font to project
-@import "./montserrat";
+@use "./montserrat";
 // add pure loader
-@import "./pure-loaders";
+@use "./pure-loaders";
 
 // COMPONENTS
-@import "./components/header";
-@import "./components/burger";
-@import "./components/productCreator";
-@import "./components/footer";
-@import "./components/player";
+@use "./components/header";
+@use "./components/burger";
+@use "./components/productCreator";
+@use "./components/footer";
+@use "./components/player";
 
 body {
   overflow-x: hidden;
@@ -1679,8 +1679,8 @@ input:checked + .fabric-canvas__btn-tool[data-text]:after {
 //    z-index: 3;
 //    font-size: 20px; }
 .fabric-canvas__btn-color > .github-picker {
-  width: 250px !important;
-  position: absolute !important;
+  width: 250px ;
+  position: absolute ;
   //right: -12px;
   right: 34px;
   top: auto;
@@ -1690,11 +1690,11 @@ input:checked + .fabric-canvas__btn-tool[data-text]:after {
   transform: rotate(90deg) translate(-68px, -58px);
   transform-origin: 0;
   z-index: 2;
-  box-shadow: none !important;
-  border: 0 !important;
-  background-color: #393d40 !important;
-  padding: 0 !important;
-  //padding-right: 38px !important;
+  box-shadow: none;
+  border: 0 ;
+  background-color: #393d40 ;
+  padding: 0 ;
+  //padding-right: 38px ;
 }
 
 .fabric-canvas__btn-font {
@@ -2410,7 +2410,7 @@ body {
 //    top: 100%;
 //}
 .canvas-container {
-  width: 100vw !important;
+  width: 100vw ;
   position: fixed;
   top: 100%;
   opacity: 0;
@@ -2502,7 +2502,7 @@ body {
 
   .fabric-canvas__btn-color > .github-picker,
   .product-creator__btn-color > .github-picker {
-    width: 400px !important;
+    width: 400px ;
     transform: rotate(90deg) translate(-231px, -207px);
   }
 
