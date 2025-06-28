@@ -22,14 +22,11 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-
-    // Camera setup
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(0, 1.5, 5);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
-    // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -51,7 +48,7 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
 
-    const hdrMap = new RGBELoader()
+    const envMap = new RGBELoader()
       .setDataType(THREE.HalfFloatType)
       .load('/hdr/env_1k.hdr', (texture) => {
         texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -61,13 +58,14 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
         pmremGenerator.dispose();
       });
       
-    // Materials
-
-    const customUniforms = {
-      time: { value: 0 },
-      cameraDirection: { value: new THREE.Vector3() }
-    };
-
+    // reflective material
+    const basic_material = new THREE.MeshStandardMaterial({
+      // envMap: envMap,
+      // metalness: 1, // Fully metallic for strong reflections
+      // roughness: 0.1,
+      side: THREE.DoubleSide // Smooth surface for clear reflections
+    });
+  const loader = new OBJLoader();
 
 
     // Material with camera-aware ripple
@@ -81,12 +79,10 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
       varying vec2 vUv;
       varying vec3 vWorldPosition;
       varying vec3 vNormal;
-      
 
       void main() {
         vUv = uv;
         vec3 pos = position;
-        vNormal = normalize(normalMatrix * normal);
 
         float dist = distance(cameraPos, (modelMatrix * vec4(pos, 1.0)).xyz);
         float maxY = 0.4;
@@ -102,20 +98,21 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
       }
     `,
       fragmentShader: `
-        uniform vec3 lightDirection; // in world space
+        uniform vec3 baseColor;
+        uniform vec3 cameraPos;
+        uniform samplerCube envMap;
+
+        varying vec2 vUv;
+        varying vec3 vWorldPosition;
         varying vec3 vNormal;
 
         void main() {
-          vec3 normal = normalize(vNormal);
+          vec3 viewDir = normalize(vWorldPosition - cameraPos);
+          vec3 reflectDir = reflect(viewDir, normalize(vNormal));
+          vec3 reflectedColor = textureCube(envMap, reflectDir).rgb;
 
-        // Simple diffuse: dot product between normal and light
-        float diffuse = max(dot(normal, lightDirection), 0.0);
-
-        vec3 baseColor = vec3(0.9, 0.9, 0.95);
-        vec3 finalColor = baseColor * diffuse;
-
-        gl_FragColor = vec4(finalColor, 1.0);
-
+          vec3 finalColor = mix(baseColor, reflectedColor, 0.6);
+          gl_FragColor = vec4(finalColor, 1.0);
         }
       `,
       uniforms: {
@@ -129,8 +126,84 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
       // envMapIntensity: 1.0,
     });
 
-    // OBJ loader
-    const loader = new OBJLoader();
+    const basicShaderMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
+        lightColor: { value: new THREE.Color(1, 1, 1) },
+        baseColor: { value: new THREE.Color(0.8, 0.2, 0.2) } // soft red
+      },
+      side: THREE.DoubleSide,
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 lightDirection;
+        uniform vec3 lightColor;
+        uniform vec3 baseColor;
+        varying vec3 vNormal;
+
+        void main() {
+          float lightStrength = max(dot(vNormal, lightDirection), 0.0);
+          vec3 finalColor = baseColor * lightColor * lightStrength;
+          gl_FragColor = vec4(finalColor, 1.0);
+        }
+      `,
+    });
+
+    const shaderWithShadow = new THREE.ShaderMaterial({
+      uniforms: {
+        lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
+        lightColor: { value: new THREE.Color(1, 1, 1) },
+        baseColor: { value: new THREE.Color(0.8, 0.2, 0.2) },
+        ...THREE.UniformsLib.lights,
+        ...THREE.UniformsLib.shadowmap
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec4 vShadowCoord;
+
+        #include <common>
+        #include <shadowmap_pars_vertex>
+
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          #include <begin_vertex>
+          #include <project_vertex>
+          #include <shadowmap_vertex>
+        }
+      `,
+      fragmentShader: `
+        #include <common>
+        #include <packing>
+        #include <shadowmap_pars_fragment>
+        #include <shadowmask_pars_fragment>
+
+        varying vec3 vNormal;
+        varying vec4 vShadowCoord;
+
+        uniform vec3 baseColor;
+        uniform vec3 lightColor;
+        uniform vec3 lightDirection;
+
+        void main() {
+          vec3 normal = normalize(vNormal);
+          float lightStrength = max(dot(normal, lightDirection), 0.0);
+
+          // Call shadow function AFTER it's been declared by shadowmask_pars_fragment
+          float shadow = getShadowMask(vShadowCoord);
+
+          vec3 finalColor = baseColor * lightColor * lightStrength * shadow;
+          gl_FragColor = vec4(finalColor, 1.0);
+        }
+      `,
+      lights: true,
+      shadowSide: THREE.FrontSide
+    });
+
 
     new THREE.Mesh(
       // The Tshirt
@@ -141,13 +214,11 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
             object.traverse((child) => {
               if (child.isMesh) {
                 // Optional: apply your ripple shader to imported mesh instead of default material
-                child.material = material;
+                child.material = shaderWithShadow;
                 child.castShadow = true;
                 child.receiveShadow = true;
-                child.PCFSoftShadowMap = true;
                 object.scale.set(4,4,4);
                 object.translateY(-2);
-                scene.add(object);
               }
             });
 
@@ -186,7 +257,7 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     let rippleTarget = 1.0;
     let rippleTimer = 0;
     const rippleFadeDelay = 1000; // 1 second
-    // const rippleFadeDuration = 10 00; // 1 second fade
+    // const rippleFadeDuration = 1000; // 1 second fade
 
     function animate(t) {
       requestAnimationFrame(animate);
@@ -220,29 +291,18 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     // Lighting
 
 
-    let light = new THREE.DirectionalLight(0xffffff, 1);
-    let dir = new THREE.Vector3();
+  //  const sun = new THREE.DirectionalLight(0xffffff, .6);
+  //   sun.position.set(3, 5, 2);
+  //   sun.castShadow = true;
+  //   sun.shadow.mapSize.set(1024, 1024);
+  //   sun.shadow.camera.left = -3;
+  //   sun.shadow.camera.right = 3;
+  //   sun.shadow.camera.top = 3;
+  //   sun.shadow.camera.bottom = -3;
+  //   sun.shadow.camera.near = 1;
+  //   sun.shadow.camera.far = 10;
 
-    light.position.set(5, 10, 7.5);
-    light.castShadow = true;
-    light.shadow.mapSize.set(1024, 1024)
-    scene.add(light);
-   
-    // light.getWorldDirection(dir);
-    // material.uniforms.lightDirection.value.copy(dir).normalize();
-
-    // const sun = new THREE.DirectionalLight(0xffffff, 1);
-    // sun.position.set(3, 5, 2);
-    // sun.castShadow = true;
-    // sun.shadow.mapSize.set(1024, 1024);
-    // sun.shadow.camera.left = -3;
-    // sun.shadow.camera.right = 3;
-    // sun.shadow.camera.top = 3;
-    // sun.shadow.camera.bottom = -3;
-    // sun.shadow.camera.near = 1;
-    // sun.shadow.camera.far = 10;
-
-    // scene.add(sun);
+  //   scene.add(sun);
 
 
 
