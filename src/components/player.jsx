@@ -36,7 +36,7 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Optional: softer edges
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.3; // Try between 0.5 to 1.0 for subtler light
+    renderer.toneMappingExposure = 0.8; // Try between 0.5 to 1.0 for subtler light
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -69,140 +69,63 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
 
 
     // Material with camera-aware ripple
-  const material = new THREE.ShaderMaterial({
-    vertexShader: `
-      uniform vec3 cameraPos;
-      uniform float time;
-      uniform float rippleStrength;
+ const material = new THREE.ShaderMaterial({
+  vertexShader: `
+    uniform vec3 cameraPos;
+    uniform float time;
+    uniform float rippleStrength;
+    uniform vec3 baseColor;
+
+    varying vec2 vUv;
+    varying vec3 vWorldPosition;
+    varying vec3 vNormal;
+
+    void main() {
+      vUv = uv;
+      vec3 pos = position;
+
+      float dist = distance(cameraPos, (modelMatrix * vec4(pos, 1.0)).xyz);
+      float maxY = 0.7;
+      float fade = smoothstep(maxY, 0.0, pos.y);
+      float ripple = sin(dist * 6.0 - time * 2.0) * 0.04 * fade * rippleStrength;
+      pos.z += ripple;
+
+      vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+      vWorldPosition = worldPos.xyz;
+      vNormal = normalize(normalMatrix * normal);
+
+      gl_Position = projectionMatrix * viewMatrix * worldPos;
+    }
+  `,
+    fragmentShader: `
       uniform vec3 baseColor;
+      uniform vec3 cameraPos;
+      uniform samplerCube envMap;
 
       varying vec2 vUv;
       varying vec3 vWorldPosition;
       varying vec3 vNormal;
 
       void main() {
-        vUv = uv;
-        vec3 pos = position;
+        vec3 viewDir = normalize(vWorldPosition - cameraPos);
+        vec3 reflectDir = reflect(viewDir, normalize(vNormal));
+        vec3 reflectedColor = textureCube(envMap, reflectDir).rgb;
 
-        float dist = distance(cameraPos, (modelMatrix * vec4(pos, 1.0)).xyz);
-        float maxY = 0.4;
-        float fade = smoothstep(maxY, 0.0, pos.y);
-        float ripple = sin(dist * 6.0 - time * 2.0) * 0.04 * fade * rippleStrength;
-        pos.z += ripple;
-
-        vec4 worldPos = modelMatrix * vec4(pos, 1.0);
-        vWorldPosition = worldPos.xyz;
-        vNormal = normalize(normalMatrix * normal);
-
-        gl_Position = projectionMatrix * viewMatrix * worldPos;
+        vec3 finalColor = mix(baseColor, reflectedColor, .9);
+        gl_FragColor = vec4(finalColor, 1.0);
       }
     `,
-      fragmentShader: `
-        uniform vec3 baseColor;
-        uniform vec3 cameraPos;
-        uniform samplerCube envMap;
-
-        varying vec2 vUv;
-        varying vec3 vWorldPosition;
-        varying vec3 vNormal;
-
-        void main() {
-          vec3 viewDir = normalize(vWorldPosition - cameraPos);
-          vec3 reflectDir = reflect(viewDir, normalize(vNormal));
-          vec3 reflectedColor = textureCube(envMap, reflectDir).rgb;
-
-          vec3 finalColor = mix(baseColor, reflectedColor, 0.6);
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `,
-      uniforms: {
-        cameraPos: { value: new THREE.Vector3() },
-        time: { value: 0 },
-        rippleStrength: { value: 1.0 },
-        baseColor: { value: new THREE.Color(0.5, 0.5, 0.5) },
-        envMap: { value: scene.environment }, // or pmrem-processed HDR
-      },
-      side: THREE.DoubleSide,
-      // envMapIntensity: 1.0,
-    });
-
-    const basicShaderMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
-        lightColor: { value: new THREE.Color(1, 1, 1) },
-        baseColor: { value: new THREE.Color(0.8, 0.2, 0.2) } // soft red
-      },
-      side: THREE.DoubleSide,
-      vertexShader: `
-        varying vec3 vNormal;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 lightDirection;
-        uniform vec3 lightColor;
-        uniform vec3 baseColor;
-        varying vec3 vNormal;
-
-        void main() {
-          float lightStrength = max(dot(vNormal, lightDirection), 0.0);
-          vec3 finalColor = baseColor * lightColor * lightStrength;
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `,
-    });
-
-    const shaderWithShadow = new THREE.ShaderMaterial({
-      uniforms: {
-        lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
-        lightColor: { value: new THREE.Color(1, 1, 1) },
-        baseColor: { value: new THREE.Color(0.8, 0.2, 0.2) },
-        ...THREE.UniformsLib.lights,
-        ...THREE.UniformsLib.shadowmap
-      },
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec4 vShadowCoord;
-
-        #include <common>
-        #include <shadowmap_pars_vertex>
-
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          #include <begin_vertex>
-          #include <project_vertex>
-          #include <shadowmap_vertex>
-        }
-      `,
-      fragmentShader: `
-        #include <common>
-        #include <packing>
-        #include <shadowmap_pars_fragment>
-        #include <shadowmask_pars_fragment>
-
-        varying vec3 vNormal;
-        varying vec4 vShadowCoord;
-
-        uniform vec3 baseColor;
-        uniform vec3 lightColor;
-        uniform vec3 lightDirection;
-
-        void main() {
-          vec3 normal = normalize(vNormal);
-          float lightStrength = max(dot(normal, lightDirection), 0.0);
-
-          // Call shadow function AFTER it's been declared by shadowmask_pars_fragment
-          float shadow = getShadowMask(vShadowCoord);
-
-          vec3 finalColor = baseColor * lightColor * lightStrength * shadow;
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `,
-      lights: true,
-      shadowSide: THREE.FrontSide
-    });
+    uniforms: {
+      cameraPos: { value: new THREE.Vector3() },
+      time: { value: 0 },
+      rippleStrength: { value: 1.0 },
+      baseColor: { value: new THREE.Color(0.8, 0.5, 0.5) },
+      // envMap: { value: scene.environment }, // or pmrem-processed HDR
+       envMap: { value: scene.environment }, // or pmrem-processed HDR
+    },
+    side: THREE.DoubleSide,
+    // envMapIntensity: 1.0,
+  });
 
 
     new THREE.Mesh(
@@ -214,11 +137,14 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
             object.traverse((child) => {
               if (child.isMesh) {
                 // Optional: apply your ripple shader to imported mesh instead of default material
-                child.material = shaderWithShadow;
+                child.material = material;
                 child.castShadow = true;
                 child.receiveShadow = true;
                 object.scale.set(4,4,4);
                 object.translateY(-2);
+
+                scene.add(object);
+
               }
             });
 
@@ -240,14 +166,14 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
 
     //gROUND
 
-    // const ground = new THREE.Mesh(
-    // new THREE.PlaneGeometry(10, 10),
-    // new THREE.MeshStandardMaterial({ color: 0xdddddd })
-    // );
-    // ground.rotation.x = -Math.PI / 2;
-    // ground.position.y = 0;
-    // ground.receiveShadow = true;
-    // scene.add(ground);
+    const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(10, 10),
+    new THREE.MeshStandardMaterial({ color: 0xdddddd })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -1.2;
+    ground.receiveShadow = true;
+    scene.add(ground);
 
     // scene.add(new THREE.AmbientLight(0xffffff, 1));
 
@@ -256,7 +182,7 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     let rippleStrength = 1.0;
     let rippleTarget = 1.0;
     let rippleTimer = 0;
-    const rippleFadeDelay = 1000; // 1 second
+    const rippleFadeDelay = 200; // 1 second
     // const rippleFadeDuration = 1000; // 1 second fade
 
     function animate(t) {
@@ -291,18 +217,18 @@ const Player = forwardRef(({ sceneBackground = true, autoRotate = false }, ref) 
     // Lighting
 
 
-  //  const sun = new THREE.DirectionalLight(0xffffff, .6);
-  //   sun.position.set(3, 5, 2);
-  //   sun.castShadow = true;
-  //   sun.shadow.mapSize.set(1024, 1024);
-  //   sun.shadow.camera.left = -3;
-  //   sun.shadow.camera.right = 3;
-  //   sun.shadow.camera.top = 3;
-  //   sun.shadow.camera.bottom = -3;
-  //   sun.shadow.camera.near = 1;
-  //   sun.shadow.camera.far = 10;
+   const sun = new THREE.DirectionalLight(0xffffff, .8);
+    sun.position.set(3, 5, 2);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -3;
+    sun.shadow.camera.right = 3;
+    sun.shadow.camera.top = 3;
+    sun.shadow.camera.bottom = -3;
+    sun.shadow.camera.near = .2;
+    sun.shadow.camera.far = 10;
 
-  //   scene.add(sun);
+    scene.add(sun);
 
 
 
