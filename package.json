@@ -13,6 +13,7 @@
     "chroma-js": "^3.1.2",
     "fabric": "^6.7.0",
     "font-face-observer": "^1.0.0",
+    "glslify": "^7.1.1",
     "lodash": "^4.17.21",
     "react": "^19.1.0",
     "react-colorful": "^5.6.1",
